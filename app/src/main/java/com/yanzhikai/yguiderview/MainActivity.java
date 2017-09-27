@@ -14,14 +14,16 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
+import com.yanzhikai.guiderview.GuiderOnClickListener;
 import com.yanzhikai.guiderview.MaskLayout;
 import com.yanzhikai.guiderview.YGuider;
 import com.yanzhikai.typertextview.TyperTextView;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener{
+public class MainActivity extends AppCompatActivity implements View.OnClickListener,GuiderOnClickListener{
     public static final String TAG = "yguiderview";
     TyperTextView tv;
     Button btn_show_all,btn_show;
+    private YGuider mYGuider;
     private TestFragment mTestFragment;
 
     @Override
@@ -36,8 +38,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btn_show.setOnClickListener(this);
 
 
-        YGuider yg = new YGuider(this);
-
+        mYGuider = new YGuider(this);
+        mYGuider.setGuiderOnClickListener(this);
+        mYGuider.addNextHighlight(btn_show);
     }
 
     private void addFragment() {
@@ -54,14 +57,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.btn_show:
-                tv.animateText("asdasdansct" + "\n" + "dafdasfasf \n dsadfasdf");
+//                tv.animateText("asdasdansct" + "\n" + "dafdasfasf \n dsadfasdf");
                 Log.d(TAG, "onClick: erssfa");
+                mYGuider.startGuide();
                 break;
             case R.id.btn_show_all:
 //                tv.showAll();
-                addFragment();
+//                addFragment();
+                mYGuider.cancelGuide();
                 break;
         }
 
+    }
+
+    @Override
+    public void onMaskClick() {
+//        mYGuider.cancelGuide();
     }
 }

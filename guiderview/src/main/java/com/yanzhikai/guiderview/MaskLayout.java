@@ -4,21 +4,22 @@ import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Region;
+import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.RelativeLayout;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
+
+import static com.yanzhikai.guiderview.ScannerView.EXPANDING;
+import static com.yanzhikai.guiderview.ScannerView.MOVING;
 
 /**
  * Created by Administrator on 2017/9/25 0025.
@@ -28,9 +29,10 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
     public static final String TAG = "guiderview";
     private Context mContext;
     private Paint sPaint;
-    private Bitmap transparencyBitmap;
     private ArrayList<ScannerView> mScannerList;
+    private ArrayList<RectF> mScanRegions;
     private boolean isMoving = false;
+    private GuiderOnClickListener mGuiderOnClickListener;
 
     public MaskLayout(Context context) {
         super(context);
@@ -47,39 +49,42 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
 
     private void init(Context context) {
         mContext = context;
+        checkAPILevel();
 //        setBackgroundResource(R.color.colorTransparency);
         setOnClickListener(this);
         setWillNotDraw(false);
         initPaint();
         initScanner();
-//        scanner = new Scanner(400,400);
-//        scanner2 = new Scanner(600,600,200,200);
-//        scanner.prepare();
-//        scanner2.prepare();
+    }
+
+    private void checkAPILevel(){
+        if (Build.VERSION.SDK_INT < 18){
+            setLayerType(LAYER_TYPE_NONE,null);
+        }
     }
 
     private void initPaint() {
         sPaint = new Paint();
-        sPaint.setAlpha(10);
+        sPaint.setAlpha(60);
+        sPaint.setStyle(Paint.Style.STROKE);
 
-        transparencyBitmap = Bitmap.createBitmap(22,22, Bitmap.Config.ARGB_8888);
-        transparencyBitmap.setHasAlpha(true);
     }
 
     private void initScanner(){
         mScannerList = new ArrayList<>();
+        mScanRegions = new ArrayList<>();
 
-        ScannerView scannerView1 = new ScannerView(mContext);
-        LayoutParams layoutParams1 = new LayoutParams(50,50);
-        scannerView1.setLayoutParams(layoutParams1);
+        ScannerView scannerView1 = new ScannerView(mContext,0,0,0,0);
+//        LayoutParams layoutParams1 = new LayoutParams(50,50);
+//        scannerView1.setLayoutParams(layoutParams1);
         addView(scannerView1);
         mScannerList.add(scannerView1);
 
-        ScannerView scannerView2 = new ScannerView(mContext);
-        LayoutParams layoutParams2 = new LayoutParams(50,50);
-        scannerView1.setLayoutParams(layoutParams2);
-        addView(scannerView2);
-        mScannerList.add(scannerView2);
+//        ScannerView scannerView2 = new ScannerView(mContext);
+////        LayoutParams layoutParams2 = new LayoutParams(50,50);
+////        scannerView1.setLayoutParams(layoutParams2);
+//        addView(scannerView2);
+//        mScannerList.add(scannerView2);
     }
 
     @Override
@@ -119,21 +124,27 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+
 //        if (!scanner.execute(canvas) && !scanner2.execute(canvas)) {
 //            postInvalidateDelayed(10);
 //            Log.d(TAG, "onDraw: ");
 //        }
-        canvas.drawColor(Color.argb(188,33,33,33));
+
+
+
         Log.d(TAG, "onDraw: canvas()" + canvas.toString());
         for (int i = 0; i < getChildCount(); i++){
-            drawScannerLine(canvas, (ScannerView) getChildAt(i),false);
+            ScannerView child = (ScannerView) getChildAt(i);
+
+            if (!isMoving){
+                clipHighlight(canvas,child.getsRegion());
+            }else {
+                canvas.drawColor(Color.argb(188,33,33,33));
+            }
+
+            drawScannerLine(canvas,child);
         }
-        canvas.save();
-        canvas.clipRect(220,1055,500,1200);
-//        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-        
-        canvas.drawBitmap(transparencyBitmap,new Rect(0,0,22,22),new Rect(0,0,280,145),sPaint);
-        canvas.restore();
+
 
         if (isMoving){
             postInvalidateDelayed(20);
@@ -141,15 +152,33 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
 
     }
 
-    private void drawScannerLine(Canvas canvas, ScannerView view, boolean isExpand){
-        if (!isExpand){
-            Log.d(TAG, "drawScannerLine: ");
-            float y = view.getY() + view.getHeight()/2;
-            float x = view.getX() + view.getWidth()/2;
-            canvas.drawLine(0,y,canvas.getWidth(),y,view.getsPaint());
-            canvas.drawLine(x,0,x,canvas.getHeight(), view.getsPaint());
+    private void clipHighlight(Canvas canvas,RectF rectF){
+        canvas.save();
+        canvas.clipRect(rectF, Region.Op.DIFFERENCE);
+        canvas.drawColor(Color.argb(188,33,33,33));
+        canvas.restore();
+    }
+
+    private void drawScannerLine(Canvas canvas, ScannerView view){
+        float y = view.getY() + view.getHeight()/2;
+        float x = view.getX();
+        switch (view.getState()) {
+            case MOVING:
+                Log.d(TAG, "drawScannerLine: MOVING");
+                canvas.drawLine(0, y, canvas.getWidth(), y, view.getsPaint());
+                canvas.drawLine(x, 0, x, canvas.getHeight(), view.getsPaint());
+                break;
+            case EXPANDING:
+                Log.d(TAG, "drawScannerLine: EXPANDING" + view.getSLeft());
+                canvas.drawRect(view.getSLeft(),view.getSTop(),view.getSRight(),view.getSBottom(),view.getsPaint());
+                canvas.drawLine(0,y,view.getSLeft(),y,view.getsPaint());
+                canvas.drawLine(view.getSRight(),y,canvas.getWidth(),y,view.getsPaint());
+                canvas.drawLine(x,0,x,view.getSTop(),view.getsPaint());
+                canvas.drawLine(x,view.getSBottom(),x,canvas.getHeight(),view.getsPaint());
+                break;
 
         }
+
     }
 
     @Override
@@ -157,27 +186,55 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
         Log.d("guiderview", "onClick: ");
 //        scannerView.layout(300,300,350,350);
 //        postInvalidate();
-        setAnimator(mScannerList.get(0),0,0,400,400,555);
-        setAnimator(mScannerList.get(1),200,222,600,999,777);
+        onNext();
+
+        if (mGuiderOnClickListener != null){
+            mGuiderOnClickListener.onMaskClick();
+        }
+    }
+
+    private void onNext(){
+        setTranslationAnimator(mScannerList.get(0), mScanRegions.get(0).centerX(), mScanRegions.get(0).centerY(),555);
 
     }
 
-    private void setAnimator(ScannerView scannerView, int fromX, int fromY, int toX, int toY,int duration){
+    private void setTranslationAnimator(final ScannerView scannerView, float toX, float toY, int duration){
+        mScannerList.get(0).setScannerRegion(mScanRegions.get(0));
+        float fromX = scannerView.getsRegion().left;
+        float fromY = scannerView.getsRegion().top;
         ObjectAnimator objectAnimatorX = ObjectAnimator.ofFloat(scannerView,"TranslationX",fromX,toX);
         ObjectAnimator objectAnimatorY = ObjectAnimator.ofFloat(scannerView,"TranslationY",fromY,toY);
-        AnimatorSet animator = new AnimatorSet();
-        animator.playTogether(objectAnimatorX,objectAnimatorY);
-        animator.setDuration(duration);
-        animator.addListener(new Animator.AnimatorListener() {
+
+        ObjectAnimator objectAnimatorTop = ObjectAnimator.ofFloat(scannerView,"sTop"
+                ,scannerView.getSTop(),scannerView.getsRegion().top);
+        ObjectAnimator objectAnimatorLeft = ObjectAnimator.ofFloat(scannerView,"sLeft"
+                ,scannerView.getSLeft(),scannerView.getsRegion().left);
+        Log.d(TAG, "setTranslationAnimator: left " + scannerView.getsRegion().left);
+        ObjectAnimator objectAnimatorBottom = ObjectAnimator.ofFloat(scannerView,"sBottom"
+                ,scannerView.getSBottom(),scannerView.getsRegion().bottom);
+        ObjectAnimator objectAnimatorRight = ObjectAnimator.ofFloat(scannerView,"sRight"
+                ,scannerView.getSRight(),scannerView.getsRegion().right);
+
+        AnimatorSet moveAnimator = new AnimatorSet();
+        moveAnimator.playTogether(objectAnimatorX,objectAnimatorY);
+
+        AnimatorSet scaleAnimator = new AnimatorSet();
+        scaleAnimator.playTogether(objectAnimatorTop,objectAnimatorLeft,objectAnimatorBottom,objectAnimatorRight);
+
+        AnimatorSet doAnimator = new AnimatorSet();
+        doAnimator.play(moveAnimator).before(scaleAnimator);
+
+        moveAnimator.setDuration(duration);
+        scaleAnimator.setDuration(duration);
+        moveAnimator.addListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
-                isMoving = true;
-                postInvalidate();
+                scannerView.setState(MOVING);
             }
 
             @Override
             public void onAnimationEnd(Animator animation) {
-                isMoving = false;
+                scannerView.setState(ScannerView.EXPANDING);
             }
 
             @Override
@@ -190,7 +247,38 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
 
             }
         });
-        animator.start();
+
+        doAnimator.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                isMoving = true;
+                postInvalidate();
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                isMoving = false;
+//                scannerView.setState(ScannerView.STAY_EXPANDED);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+
+            }
+        });
+        doAnimator.start();
     }
 
+    public void setScannerRegions(ArrayList<RectF> scanRegions){
+        mScanRegions = scanRegions;
+    }
+
+    public void setGuiderOnClickListener(GuiderOnClickListener guiderOnClickListener) {
+        this.mGuiderOnClickListener = guiderOnClickListener;
+    }
 }
