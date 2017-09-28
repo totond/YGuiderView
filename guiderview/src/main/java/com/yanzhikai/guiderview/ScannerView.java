@@ -26,8 +26,8 @@ public class ScannerView extends View {
 
     private Paint sPaint;
     private RectF sRegion = new RectF();
-    private float offsetX = 0, offsetY = 0;
     private float sLeft = 0, sTop = 0, sRight = 0, sBottom = 0;
+    private float lastCenterX = 0, lastCenterY = 0;
     private int scanIndex = 0;
 
     public ScannerView(Context context, float sLeft, float sTop, float sBottom, float sRight) {
@@ -61,23 +61,42 @@ public class ScannerView extends View {
     }
 
     public void setScannerRegion(float left, float top, float bottom, float right){
+        lastCenterX = sRegion.centerX();
+        lastCenterY = sRegion.centerY();
+
         sRegion.left = left;
         sRegion.top = top;
         sRegion.bottom = bottom;
         sRegion.right = right;
-        //框区域
+
+                //框区域
         this.sTop = sRegion.centerY();
         this.sBottom = sRegion.centerY();
         this.sLeft = sRegion.centerX();
         this.sRight = sRegion.centerX();
+
+
     }
 
     public void setScannerRegion(RectF region){
         setScannerRegion(region.left,region.top,region.bottom,region.right);
     }
 
-    public float getOffsetX() {
-        return offsetX;
+
+    public void setLastCenterX(float lastCenterX) {
+        this.lastCenterX = lastCenterX;
+    }
+
+    public void setLastCenterY(float lastCenterY) {
+        this.lastCenterY = lastCenterY;
+    }
+
+    public float getLastCenterX() {
+        return lastCenterX;
+    }
+
+    public float getLastCenterY() {
+        return lastCenterY;
     }
 
     public Paint getsPaint() {

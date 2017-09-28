@@ -32,7 +32,9 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
     private ArrayList<ScannerView> mScannerList;
     private ArrayList<RectF> mScanRegions;
     private boolean isMoving = false;
-    private GuiderOnClickListener mGuiderOnClickListener;
+    private int scanIndex = 0;
+    private OnGuiderClickListener mClickListener;
+    private OnGuiderChangedListener mChangedListener;
 
     public MaskLayout(Context context) {
         super(context);
@@ -103,17 +105,17 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        switch (ev.getAction()) {
-            case MotionEvent.ACTION_MOVE:
-
-//                break;
-            case MotionEvent.ACTION_UP:
-                return true;
-            case MotionEvent.ACTION_DOWN:
-                return false;
-
-        }
-        return false;
+//        switch (ev.getAction()) {
+//            case MotionEvent.ACTION_MOVE:
+//
+////                break;
+//            case MotionEvent.ACTION_UP:
+//                return true;
+//            case MotionEvent.ACTION_DOWN:
+//                return false;
+//
+//        }
+        return true;
     }
 
     @Override
@@ -188,20 +190,25 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
 //        postInvalidate();
         onNext();
 
-        if (mGuiderOnClickListener != null){
-            mGuiderOnClickListener.onMaskClick();
+        if (mClickListener != null){
+            mClickListener.onMaskClick();
         }
     }
 
     private void onNext(){
-        setTranslationAnimator(mScannerList.get(0), mScanRegions.get(0).centerX(), mScanRegions.get(0).centerY(),555);
+        if (scanIndex < mScanRegions.size()) {
+            setTranslationAnimator(mScannerList.get(0), mScanRegions.get(scanIndex).centerX(), mScanRegions.get(scanIndex).centerY(), 555);
+            scanIndex ++;
+        }else {
+            scanIndex = 0;
+        }
 
     }
 
     private void setTranslationAnimator(final ScannerView scannerView, float toX, float toY, int duration){
-        mScannerList.get(0).setScannerRegion(mScanRegions.get(0));
-        float fromX = scannerView.getsRegion().left;
-        float fromY = scannerView.getsRegion().top;
+        mScannerList.get(0).setScannerRegion(mScanRegions.get(scanIndex));
+        float fromX = scannerView.getLastCenterX();
+        float fromY = scannerView.getLastCenterY();
         ObjectAnimator objectAnimatorX = ObjectAnimator.ofFloat(scannerView,"TranslationX",fromX,toX);
         ObjectAnimator objectAnimatorY = ObjectAnimator.ofFloat(scannerView,"TranslationY",fromY,toY);
 
@@ -252,6 +259,7 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
             @Override
             public void onAnimationStart(Animator animation) {
                 isMoving = true;
+                setClickable(false);
                 postInvalidate();
             }
 
@@ -259,6 +267,7 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
             public void onAnimationEnd(Animator animation) {
                 isMoving = false;
 //                scannerView.setState(ScannerView.STAY_EXPANDED);
+                setClickable(true);
             }
 
             @Override
@@ -278,7 +287,7 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
         mScanRegions = scanRegions;
     }
 
-    public void setGuiderOnClickListener(GuiderOnClickListener guiderOnClickListener) {
-        this.mGuiderOnClickListener = guiderOnClickListener;
+    public void setGuiderOnClickListener(OnGuiderClickListener onGuiderClickListener) {
+        this.mClickListener = onGuiderClickListener;
     }
 }

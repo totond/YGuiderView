@@ -1,25 +1,19 @@
 package com.yanzhikai.yguiderview;
 
-import android.app.Activity;
-import android.app.ActivityManager;
-import android.content.Context;
-import android.graphics.Color;
+import android.graphics.RectF;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.FrameLayout;
 
-import com.yanzhikai.guiderview.GuiderOnClickListener;
-import com.yanzhikai.guiderview.MaskLayout;
+import com.yanzhikai.guiderview.OnGuiderClickListener;
 import com.yanzhikai.guiderview.YGuider;
 import com.yanzhikai.typertextview.TyperTextView;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener,GuiderOnClickListener{
+public class MainActivity extends AppCompatActivity implements View.OnClickListener,OnGuiderClickListener {
     public static final String TAG = "yguiderview";
     TyperTextView tv;
     Button btn_show_all,btn_show;
@@ -40,7 +34,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         mYGuider = new YGuider(this);
         mYGuider.setGuiderOnClickListener(this);
+        mYGuider.addNextHighlight(new RectF(444,777,567,922));
+        mYGuider.addNextHighlight(btn_show_all);
+        mYGuider.addNextHighlight(new RectF(300,300,500,600));
         mYGuider.addNextHighlight(btn_show);
+        mYGuider.prepareTarget();
     }
 
     private void addFragment() {
