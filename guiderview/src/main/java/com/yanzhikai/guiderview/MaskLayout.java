@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 
 import java.util.ArrayList;
 
@@ -97,8 +98,21 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
         int heightMode = MeasureSpec.AT_MOST;
         int widthSize = MeasureSpec.getSize(widthMeasureSpec);
         int heightSize = MeasureSpec.getSize(heightMeasureSpec);
+
         Log.d(TAG, "onMeasure: widthSize" + widthSize);
+        for (int i = 0; i < getChildCount(); i++){
+            View child = getChildAt(i);
+//            measureChild(
+//                    child
+//                    ,MeasureSpec.makeMeasureSpec(child.getLayoutParams().width, MeasureSpec.EXACTLY)
+//                    ,MeasureSpec.makeMeasureSpec(child.getLayoutParams().height, MeasureSpec.EXACTLY));
+            child.measure(
+                    MeasureSpec.makeMeasureSpec(child.getLayoutParams().width, MeasureSpec.EXACTLY)
+                    ,MeasureSpec.makeMeasureSpec(child.getLayoutParams().height, MeasureSpec.EXACTLY));
+        }
+
         super.onMeasure(MeasureSpec.makeMeasureSpec(widthSize, widthMode), MeasureSpec.makeMeasureSpec(heightSize, heightMode));
+//        super.onMeasure(widthMeasureSpec,heightMeasureSpec);
 //        setMeasuredDimension(widthSize,heightSize);
 
     }
@@ -120,18 +134,19 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
+//        for (int i = 0; i < getChildCount(); i++) {
+//            ScannerView child = (ScannerView) getChildAt(i);
+//            child.layout((int) child.getsRegion().left
+//                    ,(int) child.getsRegion().top
+//                    ,(int) child.getsRegion().right
+//                    ,(int) child.getsRegion().bottom);
+//        }
         Log.d(TAG, "onLayout: ");
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
-//        if (!scanner.execute(canvas) && !scanner2.execute(canvas)) {
-//            postInvalidateDelayed(10);
-//            Log.d(TAG, "onDraw: ");
-//        }
-
 
 
         Log.d(TAG, "onDraw: canvas()" + canvas.toString());
@@ -212,6 +227,7 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
         ObjectAnimator objectAnimatorX = ObjectAnimator.ofFloat(scannerView,"TranslationX",fromX,toX);
         ObjectAnimator objectAnimatorY = ObjectAnimator.ofFloat(scannerView,"TranslationY",fromY,toY);
 
+        Log.d(TAG, "onMeasure: " + mScannerList.get(0).getWidth());
         ObjectAnimator objectAnimatorTop = ObjectAnimator.ofFloat(scannerView,"sTop"
                 ,scannerView.getSTop(),scannerView.getsRegion().top);
         ObjectAnimator objectAnimatorLeft = ObjectAnimator.ofFloat(scannerView,"sLeft"

@@ -1,13 +1,16 @@
 package com.yanzhikai.guiderview;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -27,6 +30,7 @@ public class ScannerView extends View {
     private Paint sPaint;
     private RectF sRegion = new RectF();
     private float sLeft = 0, sTop = 0, sRight = 0, sBottom = 0;
+    public float lastLeft = 0, lastTop = 0, lastRight = 0, lastBottom = 0;
     private float lastCenterX = 0, lastCenterY = 0;
     private int scanIndex = 0;
 
@@ -45,6 +49,7 @@ public class ScannerView extends View {
 
     private void init() {
         initPaint();
+        setBackgroundColor(Color.BLUE);
     }
 
 
@@ -61,6 +66,11 @@ public class ScannerView extends View {
     }
 
     public void setScannerRegion(float left, float top, float bottom, float right){
+        lastLeft = sRegion.left;
+        lastRight = sRegion.right;
+        lastTop = sRegion.top;
+        lastBottom = sRegion.bottom;
+
         lastCenterX = sRegion.centerX();
         lastCenterY = sRegion.centerY();
 
@@ -69,13 +79,33 @@ public class ScannerView extends View {
         sRegion.bottom = bottom;
         sRegion.right = right;
 
-                //框区域
+        //框区域
         this.sTop = sRegion.centerY();
         this.sBottom = sRegion.centerY();
         this.sLeft = sRegion.centerX();
         this.sRight = sRegion.centerX();
 
+        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams((int)(right - left),(int)(bottom - top));
+        setLayoutParams(layoutParams);
+        Log.d("yguiderview", "onMeasure: bbbb");
 
+
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+        int heightSize = MeasureSpec.getSize(heightMeasureSpec);
+        Log.d("yguiderview", "onMeasure: child heightSize" + heightSize);
+        setMeasuredDimension(widthSize,heightSize);
+        super.onMeasure(widthMeasureSpec,heightMeasureSpec);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        Log.d("yguiderview", "onMeasure: child width" + getHeight());
+        Log.d("yguiderview", "onMeasure: child measureheigh" + getMeasuredHeight());
     }
 
     public void setScannerRegion(RectF region){
