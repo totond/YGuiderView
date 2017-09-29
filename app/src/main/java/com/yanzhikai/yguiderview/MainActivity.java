@@ -9,7 +9,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
-import com.yanzhikai.guiderview.OnGuiderClickListener;
+import com.yanzhikai.guiderview.interfaces.OnGuiderClickListener;
 import com.yanzhikai.guiderview.YGuider;
 import com.yanzhikai.typertextview.TyperTextView;
 
@@ -19,6 +19,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Button btn_show_all,btn_show;
     private YGuider mYGuider;
     private TestFragment mTestFragment;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,13 +32,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btn_show_all.setOnClickListener(this);
         btn_show.setOnClickListener(this);
 
+        String text = getResources().getString(R.string.default_string);
 
         mYGuider = new YGuider(this);
         mYGuider.setGuiderOnClickListener(this);
-        mYGuider.addNextHighlight(new RectF(444,777,567,922));
-        mYGuider.addNextHighlight(btn_show_all);
-        mYGuider.addNextHighlight(new RectF(300,300,500,600));
-        mYGuider.addNextHighlight(btn_show);
+        mYGuider.addNextHighlight(new RectF(444,777,567,922),text);
+        mYGuider.addNextHighlight(btn_show_all,text);
+        mYGuider.addNextHighlight(new RectF(300,300,500,600),"dasdfassdf");
+        mYGuider.addNextHighlight(btn_show,text);
         mYGuider.prepareTarget();
     }
 

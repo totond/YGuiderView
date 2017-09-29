@@ -2,12 +2,15 @@ package com.yanzhikai.guiderview;
 
 import android.app.Activity;
 import android.graphics.RectF;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+
+import com.yanzhikai.guiderview.Views.MaskLayout;
+import com.yanzhikai.guiderview.beans.ScanTarget;
+import com.yanzhikai.guiderview.interfaces.OnGuiderClickListener;
 
 import java.util.ArrayList;
 
@@ -24,6 +27,7 @@ public class YGuider {
     private ArrayList<RectF> mScanRegions;
     private ArrayList<ScanTarget> mScanTargets;
     private int mContentLocationX = 0, mContentLocationY = 0;
+    private boolean mIsGuiding = false;
 
     public YGuider(Activity activity){
         mActivity = activity;
@@ -35,24 +39,32 @@ public class YGuider {
         LinearLayout linearLayout = (LinearLayout) decorView.getChildAt(0);
         mContentView = (FrameLayout) linearLayout.getChildAt(1);
 
-
-        mMask = new MaskLayout(mActivity);
-        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        mMask.setLayoutParams(layoutParams);
-//        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(720,1280);
-
         mScanRegions = new ArrayList<>();
         mScanTargets = new ArrayList<>();
 
-        mMask.setScannerRegions(mScanRegions);
+        buildMask();
 
+    }
+
+    private void buildMask(){
+        mMask = new MaskLayout(mActivity,this);
+        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        mMask.setLayoutParams(layoutParams);
+        mMask.setScanTargets(mScanTargets);
     }
 
     public void startGuide(){
-        mContentView.addView(mMask);
+        if (!mIsGuiding) {
+            if (mMask != null) {
+                buildMask();
+            }
+            mIsGuiding = true;
+            mContentView.addView(mMask);
+        }
+
     }
 
-    public void addNextHighlight(View itemView){
+    public void addNextHighlight(View itemView, String text){
 //        final ViewTreeObserver observer = itemView.getViewTreeObserver();
 //        observer.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
 //            @Override
@@ -71,13 +83,13 @@ public class YGuider {
 //
 //            }
 //        });
-        ScanTarget scanTarget = new ScanTarget(itemView);
+        ScanTarget scanTarget = new ScanTarget(itemView,text);
         mScanTargets.add(scanTarget);
 
     }
 
-    public void addNextHighlight(RectF highlightRegion){
-        ScanTarget scanTarget = new ScanTarget(highlightRegion);
+    public void addNextHighlight(RectF highlightRegion, String text){
+        ScanTarget scanTarget = new ScanTarget(highlightRegion,text);
         mScanTargets.add(scanTarget);
     }
 
@@ -111,6 +123,7 @@ public class YGuider {
                     }
                     scanTarget.getRegion().offset(-mContentLocationX,-mContentLocationY);
                     mScanRegions.add(scanTarget.getRegion());
+                    mIsGuiding = false;
                 }
             }
         });
@@ -118,7 +131,15 @@ public class YGuider {
     }
 
     public void cancelGuide(){
-        mContentView.removeView(mMask);
+        mMask.exit();
+    }
+
+    public void setIsGuiding(boolean isGuiding) {
+        mIsGuiding = isGuiding;
+    }
+
+    protected boolean getIsGuiding(){
+        return mIsGuiding;
     }
 
     public void setGuiderOnClickListener(OnGuiderClickListener guiderClickListener){

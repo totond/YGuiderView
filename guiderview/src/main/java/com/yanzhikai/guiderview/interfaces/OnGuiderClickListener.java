@@ -1,4 +1,4 @@
-package com.yanzhikai.guiderview;
+package com.yanzhikai.guiderview.interfaces;
 
 /**
  * Created by Administrator on 2017/9/27 0027.

@@ -1,4 +1,4 @@
-package com.yanzhikai.guiderview;
+package com.yanzhikai.guiderview.Views;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -24,7 +24,7 @@ public class ScannerView extends View {
     @IntDef({GONE, MOVING, EXPANDING, STAY_EXPANDED})
     @Retention(RetentionPolicy.SOURCE)
     public  @interface ScannerState {}
-    private @Scanner.ScannerState
+    private @ScannerState
     int mState = GONE;
 
     private Paint sPaint;

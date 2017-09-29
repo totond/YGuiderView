@@ -1,4 +1,4 @@
-package com.yanzhikai.guiderview;
+package com.yanzhikai.guiderview.Views;
 
 import android.animation.Animator;
 import android.animation.AnimatorSet;
@@ -10,18 +10,20 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Region;
 import android.os.Build;
-import android.util.AttributeSet;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
+import android.view.ViewTreeObserver;
+
+import com.yanzhikai.guiderview.R;
+import com.yanzhikai.guiderview.beans.ScanTarget;
+import com.yanzhikai.guiderview.YGuider;
+import com.yanzhikai.guiderview.interfaces.OnGuiderChangedListener;
+import com.yanzhikai.guiderview.interfaces.OnGuiderClickListener;
+import com.yanzhikai.guiderview.interfaces.OnGuiderListener;
 
 import java.util.ArrayList;
-
-import static com.yanzhikai.guiderview.ScannerView.EXPANDING;
-import static com.yanzhikai.guiderview.ScannerView.MOVING;
 
 /**
  * Created by Administrator on 2017/9/25 0025.
@@ -30,27 +32,23 @@ import static com.yanzhikai.guiderview.ScannerView.MOVING;
 public class MaskLayout extends ViewGroup implements View.OnClickListener,GuidePopupWindow.OnWindowClickListener {
     public static final String TAG = "guiderview";
     private Context mContext;
+    private YGuider mYGuider;
     private Paint sPaint;
     private ArrayList<ScannerView> mScannerList;
-    private ArrayList<RectF> mScanRegions;
+    private ArrayList<ScanTarget> mScanTargets;
     private boolean isMoving = false;
     private int scanIndex = 0;
     private OnGuiderClickListener mClickListener;
     private GuidePopupWindow mGuidePopupWindow;
     private OnGuiderChangedListener mChangedListener;
 
-    public MaskLayout(Context context) {
+
+    public MaskLayout(Context context, YGuider yGuider) {
         super(context);
+        mYGuider = yGuider;
         init(context);
     }
 
-    public MaskLayout(Context context, AttributeSet attrs) {
-        super(context, attrs);
-    }
-
-    public MaskLayout(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-    }
 
     private void init(Context context) {
         mContext = context;
@@ -63,6 +61,19 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener,GuideP
         mGuidePopupWindow = new GuidePopupWindow(mContext);
         mGuidePopupWindow.setContentBackgroundId(R.drawable.dialog_shape);
         mGuidePopupWindow.setOnWindowClickListener(this);
+
+        if (mChangedListener != null){
+            mChangedListener.onGuiderStart();
+        }
+
+        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                onNext();
+            }
+        });
+
     }
 
     private void checkAPILevel(){
@@ -80,7 +91,7 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener,GuideP
 
     private void initScanner(){
         mScannerList = new ArrayList<>();
-        mScanRegions = new ArrayList<>();
+        mScanTargets = new ArrayList<>();
 
         ScannerView scannerView1 = new ScannerView(mContext,0,0,0,0);
 //        LayoutParams layoutParams1 = new LayoutParams(50,50);
@@ -185,12 +196,12 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener,GuideP
         float y = view.getY() + view.getHeight()/2;
         float x = view.getX();
         switch (view.getState()) {
-            case MOVING:
+            case ScannerView.MOVING:
                 Log.d(TAG, "drawScannerLine: MOVING");
                 canvas.drawLine(0, y, canvas.getWidth(), y, view.getsPaint());
                 canvas.drawLine(x, 0, x, canvas.getHeight(), view.getsPaint());
                 break;
-            case EXPANDING:
+            case ScannerView.EXPANDING:
                 Log.d(TAG, "drawScannerLine: EXPANDING" + view.getSLeft());
                 canvas.drawRect(view.getSLeft(),view.getSTop(),view.getSRight(),view.getSBottom(),view.getsPaint());
                 canvas.drawLine(0,y,view.getSLeft(),y,view.getsPaint());
@@ -206,9 +217,7 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener,GuideP
     @Override
     public void onClick(View v) {
         Log.d("guiderview", "onClick: ");
-//        scannerView.layout(300,300,350,350);
-//        postInvalidate();
-        onNext();
+//        onNext();
 
         if (mClickListener != null){
             mClickListener.onMaskClick();
@@ -216,17 +225,24 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener,GuideP
     }
 
     public void onNext(){
-        if (scanIndex < mScanRegions.size()) {
-            setTranslationAnimator(mScannerList.get(0), mScanRegions.get(scanIndex).centerX(), mScanRegions.get(scanIndex).centerY(), 555);
-            scanIndex ++;
+        if (scanIndex < mScanTargets.size()) {
+            if ((mChangedListener != null)){
+                mChangedListener.onGuiderNext();
+            }
+            setAnimator(mScannerList.get(0)
+                    , mScanTargets.get(scanIndex).getRegion().centerX()
+                    , mScanTargets.get(scanIndex).getRegion().centerY());
         }else {
-            scanIndex = 0;
+            exit();
+            if (mChangedListener != null){
+                mChangedListener.onGuiderFinished();
+            }
         }
 
     }
 
-    private void setTranslationAnimator(final ScannerView scannerView, float toX, float toY, int duration){
-        mScannerList.get(0).setScannerRegion(mScanRegions.get(scanIndex));
+    private void setAnimator(final ScannerView scannerView, float toX, float toY){
+        mScannerList.get(0).setScannerRegion(mScanTargets.get(scanIndex).getRegion());
         float fromX = scannerView.getLastCenterX();
         float fromY = scannerView.getLastCenterY();
         ObjectAnimator objectAnimatorX = ObjectAnimator.ofFloat(scannerView,"TranslationX",fromX,toX);
@@ -237,7 +253,6 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener,GuideP
                 ,scannerView.getSTop(),scannerView.getsRegion().top);
         ObjectAnimator objectAnimatorLeft = ObjectAnimator.ofFloat(scannerView,"sLeft"
                 ,scannerView.getSLeft(),scannerView.getsRegion().left);
-        Log.d(TAG, "setTranslationAnimator: left " + scannerView.getsRegion().left);
         ObjectAnimator objectAnimatorBottom = ObjectAnimator.ofFloat(scannerView,"sBottom"
                 ,scannerView.getSBottom(),scannerView.getsRegion().bottom);
         ObjectAnimator objectAnimatorRight = ObjectAnimator.ofFloat(scannerView,"sRight"
@@ -252,12 +267,12 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener,GuideP
         AnimatorSet doAnimator = new AnimatorSet();
         doAnimator.play(moveAnimator).before(scaleAnimator);
 
-        moveAnimator.setDuration(duration);
-        scaleAnimator.setDuration(duration);
+        moveAnimator.setDuration(mScanTargets.get(scanIndex).getMoveDuration());
+        scaleAnimator.setDuration(mScanTargets.get(scanIndex).getScaleDuration());
         moveAnimator.addListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
-                scannerView.setState(MOVING);
+                scannerView.setState(ScannerView.MOVING);
             }
 
             @Override
@@ -295,7 +310,8 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener,GuideP
 //                mGuidePopupWindow.showAsDropDown(mScannerList.get(0),0,0);
 
                 mGuidePopupWindow.showAsScannerTop(mScannerList.get(0),0,100);
-                mGuidePopupWindow.showGuideText("dasdasdafafasfafafgbbb",0);
+                mGuidePopupWindow.showGuideText(mScanTargets.get(scanIndex).getShowText(),0);
+                scanIndex ++;
             }
 
             @Override
@@ -311,8 +327,8 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener,GuideP
         doAnimator.start();
     }
 
-    public void setScannerRegions(ArrayList<RectF> scanRegions){
-        mScanRegions = scanRegions;
+    public void setScanTargets(ArrayList<ScanTarget> scanTargets){
+        mScanTargets = scanTargets;
     }
 
     public void setGuiderOnClickListener(OnGuiderClickListener onGuiderClickListener) {
@@ -323,6 +339,12 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener,GuideP
         this.mChangedListener = mChangedListener;
     }
 
+    public void setOnGuiderListener(OnGuiderListener onGuiderListener){
+        mChangedListener = onGuiderListener;
+        mChangedListener = onGuiderListener;
+
+    }
+
     @Override
     public void onNextClick() {
         if (mClickListener != null){
@@ -331,10 +353,26 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener,GuideP
         onNext();
     }
 
+    public void exit(){
+        mYGuider.setIsGuiding(false);
+        ViewGroup parent = (ViewGroup)getParent();
+        parent.removeView(this);
+        mGuidePopupWindow.dismiss();
+    }
+
     @Override
     public void onJumpClick() {
         if (mClickListener != null){
             mClickListener.onJumpClick();
         }
+        exit();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        Log.d(TAG, "onDetachedFromWindow: ");
+        mContext = null;
+        mYGuider = null;
     }
 }
