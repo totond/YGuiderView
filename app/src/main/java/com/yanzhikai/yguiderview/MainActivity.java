@@ -72,4 +72,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onMaskClick() {
 //        mYGuider.cancelGuide();
     }
+
+    @Override
+    public void onNextClick() {
+
+    }
+
+    @Override
+    public void onJumpClick() {
+
+    }
 }

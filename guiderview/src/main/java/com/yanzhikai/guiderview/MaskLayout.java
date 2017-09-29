@@ -12,6 +12,7 @@ import android.graphics.Region;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,7 +27,7 @@ import static com.yanzhikai.guiderview.ScannerView.MOVING;
  * Created by Administrator on 2017/9/25 0025.
  */
 
-public class MaskLayout extends ViewGroup implements View.OnClickListener {
+public class MaskLayout extends ViewGroup implements View.OnClickListener,GuidePopupWindow.OnWindowClickListener {
     public static final String TAG = "guiderview";
     private Context mContext;
     private Paint sPaint;
@@ -35,6 +36,7 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
     private boolean isMoving = false;
     private int scanIndex = 0;
     private OnGuiderClickListener mClickListener;
+    private GuidePopupWindow mGuidePopupWindow;
     private OnGuiderChangedListener mChangedListener;
 
     public MaskLayout(Context context) {
@@ -58,6 +60,9 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
         setWillNotDraw(false);
         initPaint();
         initScanner();
+        mGuidePopupWindow = new GuidePopupWindow(mContext);
+        mGuidePopupWindow.setContentBackgroundId(R.drawable.dialog_shape);
+        mGuidePopupWindow.setOnWindowClickListener(this);
     }
 
     private void checkAPILevel(){
@@ -210,7 +215,7 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
         }
     }
 
-    private void onNext(){
+    public void onNext(){
         if (scanIndex < mScanRegions.size()) {
             setTranslationAnimator(mScannerList.get(0), mScanRegions.get(scanIndex).centerX(), mScanRegions.get(scanIndex).centerY(), 555);
             scanIndex ++;
@@ -274,6 +279,8 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
         doAnimator.addListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
+                mGuidePopupWindow.dismiss();
+
                 isMoving = true;
                 setClickable(false);
                 postInvalidate();
@@ -284,6 +291,11 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
                 isMoving = false;
 //                scannerView.setState(ScannerView.STAY_EXPANDED);
                 setClickable(true);
+//                mGuidePopupWindow.showAtLocation(MaskLayout.this, Gravity.CENTER,0,0);
+//                mGuidePopupWindow.showAsDropDown(mScannerList.get(0),0,0);
+
+                mGuidePopupWindow.showAsScannerTop(mScannerList.get(0),0,100);
+                mGuidePopupWindow.showGuideText("dasdasdafafasfafafgbbb",0);
             }
 
             @Override
@@ -305,5 +317,24 @@ public class MaskLayout extends ViewGroup implements View.OnClickListener {
 
     public void setGuiderOnClickListener(OnGuiderClickListener onGuiderClickListener) {
         this.mClickListener = onGuiderClickListener;
+    }
+
+    public void setOnGuiderChangedListener(OnGuiderChangedListener mChangedListener) {
+        this.mChangedListener = mChangedListener;
+    }
+
+    @Override
+    public void onNextClick() {
+        if (mClickListener != null){
+            mClickListener.onNextClick();
+        }
+        onNext();
+    }
+
+    @Override
+    public void onJumpClick() {
+        if (mClickListener != null){
+            mClickListener.onJumpClick();
+        }
     }
 }

@@ -5,5 +5,7 @@ package com.yanzhikai.guiderview;
  */
 
 public interface OnGuiderClickListener {
-    public void onMaskClick();
+    void onMaskClick();
+    void onNextClick();
+    void onJumpClick();
 }

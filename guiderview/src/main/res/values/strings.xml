@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">GuiderView</string>
+    <string name="text_next"><u>NEXT</u></string>
+    <string name="text_jump"><u>JUMP</u></string>
 </resources>

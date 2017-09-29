@@ -86,6 +86,7 @@ public class YGuider {
         mContentView.getLocationOnScreen(contentLocation);
         mContentLocationX = contentLocation[0];
         mContentLocationY = contentLocation[1];
+
     }
 
     public void prepareTarget(){
